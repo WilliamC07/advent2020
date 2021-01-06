@@ -16,19 +16,20 @@ void read(std::ifstream &input, std::vector<std::pair<std::string, int>> &instru
   int val;
 
   while(input >> instruction >> val){
-    instructionPairs.push_back({instruction, val});
+    instructionPairs.emplace_back(instruction, val);
   }
 }
 
-bool terminates(std::unordered_set<int> &instructionPassed,
-                std::vector<std::pair<std::string, int>> instructionPairs,
-                int acc, int counter){
-  if(instructionPassed.find(counter) != instructionPassed.end()){
-    return false;
-  }else{
-    auto &pair = instructionPairs[counter];
-    std::string instruction{pair.first};
+using InstructionPair = std::vector<std::pair<std::string, int>>;
+using Passed = std::unordered_set<int>;
+
+bool teriminates(InstructionPair &instructionPairs, Passed passed, int &acc, int counter){
+  while(counter < instructionPairs.size() && passed.find(counter) == passed.end()){
+    auto &pair = instructionPairs.at(counter);
+    std::string instruction = pair.first;
     int val = pair.second;
+
+    passed.insert(counter);
 
     if(instruction == "acc"){
       acc += val;
@@ -39,58 +40,59 @@ bool terminates(std::unordered_set<int> &instructionPassed,
       // nop
       counter++;
     }
-    return terminates(instructionPassed, instructionPairs, acc, counter);
-  }
-}
-
-void fixed(std::unordered_set<int> &instructionPassed,
-          std::vector<std::pair<std::string, int>> instructionPairs,
-          int &acc, int counter){
-  if(instructionPassed.size() == instructionPairs.size()){
-    return;
   }
 
-  auto &pair = instructionPairs[counter];
-  std::string instruction{pair.first};
-  int val{pair.second};
-
-  if(instruction == "nop"){
-    int tmp = acc;
-    // will it end if this were a jmp
-    if(terminates(instructionPassed, instructionPairs, tmp, counter + val)){
-      acc = tmp;
-      return;
-    }
-    // stay as nop
-    fixed(instructionPassed, instructionPairs, acc, counter + 1);
-  }else if(instruction == "jmp"){
-    int tmp = acc;
-    // will it end if this were a nop
-    if(terminates(instructionPassed, instructionPairs, tmp, counter + 1)){
-      acc = tmp;
-      return;
-    }
-    // stay as jmp
-    fixed(instructionPassed, instructionPairs, acc, counter + val);
+  if(counter == instructionPairs.size()){
+    return true;
   }else{
-    acc += val;
-    fixed(instructionPassed, instructionPairs, acc, counter + 1);
+    return false;
   }
 }
 
 void part2(std::vector<std::pair<std::string, int>> &instructionPairs){
-  std::unordered_set<int> instructionPassed;
+  std::unordered_set<int> passed;
   int acc = 0;
-  fixed(instructionPassed, instructionPairs, acc, 0);
+  int counter = 0;
+
+  while(counter < instructionPairs.size() && passed.find(counter) == passed.end()) {
+    passed.insert(counter);
+    auto &pair = instructionPairs.at(counter);
+    std::string instruction = pair.first;
+    int val = pair.second;
+    int tmp = acc;
+
+    if (instruction == "acc") {
+      acc += val;
+      counter++;
+    } else if (instruction == "jmp") {
+      // what if this were nop
+      if(teriminates(instructionPairs, passed, tmp, counter + 1)){
+        std::cout << "ended\n";
+        acc = tmp;
+        break;
+      }
+      // keep as jmp
+      counter += val;
+    } else {
+      // nop
+      if(teriminates(instructionPairs, passed, tmp, counter + val)){
+        std::cout << "ended\n";
+        acc = tmp;
+        break;
+      }
+      counter++;
+    }
+  }
+
   std::cout << "Part 2: " << acc << "\n";
 }
 
 int main(){
-  std::ifstream input("input.txt");
+  std::ifstream input("/Users/williamcao/CLionProjects/adventofcode2020/day8/input.txt");
   std::vector<std::pair<std::string, int>> instructionPairs;
   read(input, instructionPairs);
-  std::unordered_set<int> instructionPassed;
 
+  std::unordered_set<int> instructionPassed;
   int acc = 0;
   int prevAcc;
   int i = 0;
