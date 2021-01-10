@@ -19,35 +19,47 @@ void applyMask(const std::string &mask, unsigned long &value) {
   }
 }
 
-void getBitString(std::string &destination, unsigned long value){
+// "destination" string must be size 64
+void getBitString(std::string &fluctuated, unsigned long value){
   // we need 32 bits
   for(int i = 0; i < 32; i++){
+    int destinationIndex = fluctuated.size() - i - 0;
     if(value & (1UL << i)){
       // bit is set
-      destination = "1" + destination;
+      fluctuated[destinationIndex] = '1';
     }else{
-      destination = "0" + destination;
+      fluctuated[destinationIndex] = '0';
     }
   }
 }
 
-void applyFloatingMask(const std::string &mask, unsigned long &value){
-  int size = mask.size();
-  for(int i = size - 1; i >= 0; i--){
-    int bitPosition = size - i - 1;
-    if(mask[i] == '0') continue;
-    if(mask[i] == '1') {
-      // set bit to 1
-      value |= (1UL << bitPosition);
-    }
+unsigned long sumOfPossibles(std::string &fluctuated, int i){
+
+  int bitPosition = fluctuated.size() - i - 1;
+
+  if(i == fluctuated.size()) return 0;
+
+  if(fluctuated[i] == '0'){
+    return sumOfPossibles(fluctuated, i+1);
+  }else if(fluctuated[i] == '1'){
+    return (1UL << bitPosition) + sumOfPossibles(fluctuated, i+1);
+  }else{
+    // X
+
+
   }
 }
 
 int main(){
-  std::ifstream input("input.txt");
-  std::map<int, unsigned long> mem;
-  unsigned long sum = 0;
+  std::string s{"XX"};
+  int i = s.size() - 1;
+  std::cout << sumOfPossibles(s, i) << "\n";
 
+  std::ifstream input("input.txt");
+  std::map<int, unsigned long> memPart1;
+  unsigned long sumPart1 = 0;
+  std::map<int, unsigned long> memPart2;
+  unsigned long sumPart2 = 0;
   const std::string EQUAL_TOKEN{" = "};
 
   std::string line;
@@ -59,16 +71,30 @@ int main(){
     }else{
       // setting mem
       unsigned long value = std::stoi(line.substr(line.find(EQUAL_TOKEN) + EQUAL_TOKEN.size()));
-      applyMask(mask, value);
       std::string key = line.substr(0, line.find(EQUAL_TOKEN));
-      std::string address = line.substr(line.find("[") + 1, line.find("]"));
-      mem[std::stoi(address)] = value;
+      int address = std::stoi(line.substr(line.find("[") + 1, line.find("]")));
+
+      // part 2
+      std::string fluctuated(64, '0');
+      getBitString(fluctuated, value);
+      memPart2[address] = sumOfPossibles(fluctuated, fluctuated.size() - 1);
+
+      // part 1
+      applyMask(mask, value);
+
+      memPart1[address] = value;
     }
   }
 
-  for(auto &pair : mem){
-    sum += pair.second;
+  for(auto &pair : memPart1){
+    sumPart1 += pair.second;
   }
 
-  std::cout << sum << "\n";
+  for(auto &pair : memPart2){
+    sumPart2 += pair.second;
+  }
+
+
+  std::cout << "Part 1: " << sumPart1 << "\n";
+  std::cout << "Part 2: " << sumPart2 << "\n";
 }
