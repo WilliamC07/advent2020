@@ -2,3 +2,5 @@ a.out
 test.txt
 .idea
 cmake-build-debug/
+.DS_STORE
+a.out.dSYM/
