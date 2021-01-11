@@ -1,10 +1,9 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
-#include <vector>
 #include <string>
 #include <map>
-#include <math.h>
+#include <bitset>
 
 void applyMask(const std::string &mask, unsigned long &value) {
   int size = mask.size();
@@ -20,76 +19,75 @@ void applyMask(const std::string &mask, unsigned long &value) {
 }
 
 // "destination" string must be size 64
-void getBitString(std::string &fluctuated, unsigned long value){
+void getBitString(std::string &fluctuated, const std::string &mask, unsigned long value){
+  fluctuated = std::bitset<64>(value).to_string();
+
   // we need 32 bits
-  for(int i = 0; i < 32; i++){
-    int destinationIndex = fluctuated.size() - i - 0;
-    if(value & (1UL << i)){
+  for(int i = 0; i < mask.size(); i++){
+    int destinationIndex = fluctuated.size() - i - 1;
+    int maskIndex = mask.size() - i - 1;
+    if(mask.at(maskIndex) == '1'){
       // bit is set
-      fluctuated[destinationIndex] = '1';
-    }else{
-      fluctuated[destinationIndex] = '0';
+      fluctuated.at(destinationIndex) = '1';
+    }else if(mask.at(maskIndex) == 'X'){
+      fluctuated.at(destinationIndex) = 'X';
     }
   }
 }
 
-unsigned long sumOfPossibles(std::string &fluctuated, int i){
+void possibilities(std::string &fluctuated, int i, std::map<unsigned long, unsigned long> &mem, unsigned long val){
+  if(i == fluctuated.size()){
+    mem[std::bitset<64>(fluctuated).to_ulong()] = val;
+    return;
+  }
 
-  int bitPosition = fluctuated.size() - i - 1;
-
-  if(i == fluctuated.size()) return 0;
-
-  if(fluctuated[i] == '0'){
-    return sumOfPossibles(fluctuated, i+1);
-  }else if(fluctuated[i] == '1'){
-    return (1UL << bitPosition) + sumOfPossibles(fluctuated, i+1);
+  if(fluctuated.at(i) == 'X'){
+    fluctuated.at(i) = '0';
+    possibilities(fluctuated, i, mem, val);
+    fluctuated.at(i) = '1';
+    possibilities(fluctuated, i, mem, val);
+    fluctuated.at(i) = 'X';
   }else{
-    // X
-
-
+    // 0 or 1
+    possibilities(fluctuated, i + 1, mem, val);
   }
 }
 
 int main(){
-  std::string s{"XX"};
-  int i = s.size() - 1;
-  std::cout << sumOfPossibles(s, i) << "\n";
-
-  std::ifstream input("input.txt");
+  std::ifstream input("/Users/williamcao/CLionProjects/adventofcode2020/day_14/input.txt");
   std::map<int, unsigned long> memPart1;
-  unsigned long sumPart1 = 0;
-  std::map<int, unsigned long> memPart2;
-  unsigned long sumPart2 = 0;
+  std::map<unsigned long, unsigned long> memPart2;
   const std::string EQUAL_TOKEN{" = "};
 
   std::string line;
   std::string mask;
-  while(std::getline(input, line)){
-    if(line[1] == 'a'){
+  while(std::getline(input, line)) {
+    if (line[1] == 'a') {
       // mask line
       mask = line.substr(line.find(EQUAL_TOKEN) + EQUAL_TOKEN.size());
-    }else{
+    } else {
       // setting mem
       unsigned long value = std::stoi(line.substr(line.find(EQUAL_TOKEN) + EQUAL_TOKEN.size()));
       std::string key = line.substr(0, line.find(EQUAL_TOKEN));
-      int address = std::stoi(line.substr(line.find("[") + 1, line.find("]")));
+      int address = std::stoi(line.substr(line.find('[') + 1, line.find(']')));
 
       // part 2
-      std::string fluctuated(64, '0');
-      getBitString(fluctuated, value);
-      memPart2[address] = sumOfPossibles(fluctuated, fluctuated.size() - 1);
+      std::string fluctuated;
+      getBitString(fluctuated, mask, address);
+      possibilities(fluctuated, 0, memPart2, value);
 
       // part 1
       applyMask(mask, value);
-
       memPart1[address] = value;
     }
   }
 
+  unsigned long sumPart1 = 0;
   for(auto &pair : memPart1){
     sumPart1 += pair.second;
   }
 
+  unsigned long sumPart2 = 0;
   for(auto &pair : memPart2){
     sumPart2 += pair.second;
   }
