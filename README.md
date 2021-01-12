@@ -9,7 +9,8 @@ notes:
 - Day 15: Program runs in 0.00s for part 1. About 10 seconds for part 2. 
   Using unordered_map instead of map for part 2 bought runtime from 30 seconds to 10 seconds. 
   Reserving space (largest power of 2 that can hold all the data. We get the size by running the program first.) bought the time from 10 seconds to 8 seconds.
-  Only other way I can think of speeding this up is finding a pattern in the game.
+  ~~Only other way I can think of speeding this up is finding a pattern in the game.~~ 
+- Day 15 optimized: I used a **VERY** large array to use as a map instead. Brought it down to 0.7 seconds for part 2.
 
 Git:  
 - To perm delete something from all record:  
